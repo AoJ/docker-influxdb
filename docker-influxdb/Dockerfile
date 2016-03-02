@@ -1,17 +1,17 @@
-FROM alpine:3.2
+FROM alpine:3.3
 MAINTAINER AooJ <aooj@n13.cz>
 
 ENV DEV_PACKAGES="build-base make git go"
-ENV INFLUXDB_VERSION=0.9.4.1
+ENV INFLUXDB_VERSION=v0.10.1
 
 RUN     echo @edge http://dl-3.alpinelinux.org/alpine/edge/main >> /etc/apk/repositories                        && \
         apk add --update $DEV_PACKAGES go@edge                                                                  && \
         export GOPATH=/tmp/infuxdb                                                                              && \
         mkdir -p $GOPATH/src/github.com/influxdb                                                                && \
         cd $GOPATH/src/github.com/influxdb                                                                      && \
-        git clone --branch v${INFLUXDB_VERSION} https://github.com/influxdb/influxdb.git                        && \
+        git clone --branch ${INFLUXDB_VERSION} https://github.com/influxdb/influxdb.git                         && \
         go get -u -f -t ./...                                                                                   && \
-        go build -ldflags="-X main.version=v${INFLUXDB_VERSION} -X main.branch=master -X main.commit=`cd influxdb && git rev-parse HEAD`" ./... && \
+        go build -ldflags="-X main.version=${INFLUXDB_VERSION} -X main.branch=master -X main.commit=`cd influxdb && git rev-parse HEAD`" ./... && \
         go install ./...                                                                                        && \
         cp $GOPATH/bin/* /usr/local/bin/                                                                        && \
         apk del $DEV_PACKAGES                                                                                   && \
@@ -20,7 +20,8 @@ RUN     echo @edge http://dl-3.alpinelinux.org/alpine/edge/main >> /etc/apk/repo
 
 
 RUN mkdir -p /etc/influxdb
-ADD types.db /usr/share/collectd/types.db
+RUN mkdir -p /data/influxdb
+ADD collectd.types.db /usr/share/collectd/types.db
 ADD config.toml /etc/influxdb/config.toml
 
 # Admin WebUI
@@ -35,6 +36,9 @@ EXPOSE 8099
 # Raft clustering
 EXPOSE 8090
 
+# udp
+EXPOSE 44444
+
 VOLUME ["/data"]
 
-CMD ["/opt/run.sh"]
+CMD ["/usr/local/bin/influxd"]
