@@ -1,35 +1,49 @@
 #/usr/bin/env sh
-set -ev
+set -evx
+cd /tmp
+export INFLUXDB_GIT_URL=https://github.com/influxdata/influxdb.git
+export GOLANG_URL=https://golang.org/dl/go$GOLANG_VERSION.src.tar.gz
 
-export DEV_PACKAGES="build-base make git go@edge"
+# install build deps
+apk add --update --virtual .build-deps \
+        bash                           \
+        ca-certificates                \
+        gcc                            \
+        musl-dev                       \
+        openssl                        \
+        git
 
-# install dev packages
-echo @edge http://dl-3.alpinelinux.org/alpine/edge/main >> /etc/apk/repositories
-apk add --update $DEV_PACKAGES
+# download go
+wget -q "$GOLANG_URL" -O golang.tar.gz
+echo "$GOLANG_SHA1  golang.tar.gz" | sha1sum -c -
+tar -C /usr/local -xzf golang.tar.gz
+cd /usr/local/go/src && ./make.bash
 
-# make working dir
-export GOPATH=/tmp/infuxdb
-mkdir -p $GOPATH/src/github.com/influxdb
-cd $GOPATH/src/github.com/influxdb
+# download influxdb
+export GOPATH=/tmp
+export GOROOT=/usr/local/go
+export PATH=$GOPATH/bin:$GOROOT/bin:$PATH
 
-# download and clone influxdb
-git clone --branch ${INFLUXDB_VERSION} https://github.com/influxdb/influxdb.git
+mkdir -p $GOPATH/src/github.com/influxdata
+cd $GOPATH/src/github.com/influxdata
+git clone --depth=1 -q --branch $INFLUXDB_VERSION $INFLUXDB_GIT_URL
+cd $GOPATH/src/github.com/influxdata/influxdb
 
-exit 0
-
+# build
 go get -u -f -t ./...
-go build -ldflags="-X main.version=${INFLUXDB_VERSION} -X main.branch=master -X main.commit=`cd influxdb && git rev-parse HEAD`" ./...
-go install ./...
-cp $GOPATH/bin/* /usr/local/bin/
-
-# prepare dir structure and place-in configs
-mkdir -p /etc/influxdb
-mkdir -p /data/influxdb
-mv /tmp/collectd.types.db /usr/share/collectd/types.db
-mv /tmp/config.toml /etc/influxdb/config.toml
+go clean ./...
+date=$(git log -n1 --format="%aI" --date=iso8601-strict)
+LDFLAGS="-X main.version $INFLUXDB_VERSION"                      \
+LDFLAGS="$LDFLAGS -X main.branch master"                         \
+LDFLAGS="$LDFLAGS -X main.commit $(git rev-parse --short HEAD)"  \
+LDFLAGS="$LDFLAGS -X main.buildTime $date"                       \
+        go install -ldflags="$LDFLAGS" ./...
+cp $GOPATH/bin/influx* /usr/bin/
 
 # clean up
-apk del $DEV_PACKAGES
-rm -rf /tmp/
+apk del .build-deps
+rm -rf /var/cache/apk/* /tmp/* /var/tmp/* $GOROOT $GOPATH
 
-influxd version
+# download and clone influxdb
+# git clone --branch ${INFLUXDB_VERSION} https://github.com/influxdb/influxdb.git
+
