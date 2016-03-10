@@ -1,5 +1,5 @@
 NAME ?= aooj/influxdb
-VERSION ?= v0.10.1
+VERSION ?= v0.10.2
 
 build:
 	docker build --rm -t $(NAME):$(VERSION) .
