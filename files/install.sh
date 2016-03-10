@@ -36,7 +36,9 @@ go clean ./...
 # build
 git checkout -q --detach "v$INFLUXDB_VERSION"
 # use date from last commit in branch instead of current date
-date=$(git log -n1 --format="%aI" --date=iso8601-strict)
+# TODO Reproducible build
+# date=$(git log -n1 --format="%aI" --date=iso8601-strict)
+date=$(date -Iseconds)
 export LDFLAGS="-X main.version $INFLUXDB_VERSION"
 export LDFLAGS="$LDFLAGS -X main.branch master"
 export LDFLAGS="$LDFLAGS -X main.commit $(git rev-parse --short HEAD)"
