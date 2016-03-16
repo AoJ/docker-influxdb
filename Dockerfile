@@ -19,9 +19,9 @@ RUN addgroup -g $USER_ID -S $USER                      \
  && adduser -S -D -H -u $USER_ID -G $USER $USER        \
  && /tmp/install.sh
 
+VOLUME /var/lib/influxdb
 # TODO only for run influxdb
 USER $USER
-VOLUME /var/lib/influxdb
 
 #      webui  http api  proto cluster   raft cluster
 EXPOSE 8083   8086      8088            8091
