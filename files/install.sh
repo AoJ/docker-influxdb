@@ -52,24 +52,24 @@ else
   files=$(ls $GOPATH/bin/*)
 fi
 cp $files /usr/local/bin/
-chown influx:influx $files
+chown $USER_NAME:$USER_NAME $files
 chmod 550 $files
 sha1sum $files
 
 
 # use default config
 cp etc/config.sample.toml /etc/influxdb.conf
-chown influx:influx /etc/influxdb.conf
+chown $USER_NAME:$USER_NAME /etc/influxdb.conf
 chmod 440 /etc/influxdb.conf
 
 # prepare data dir
 mkdir -p /var/lib/influxdb
-chown -R influx:influx /var/lib/influxdb
+chown -R $USER_NAME:$USER_NAME /var/lib/influxdb
 chmod -R 772 /var/lib/influxdb
 
 # prepare data dir
 mkdir -p /run/influx
-chown -R influx:influx /run/influx
+chown -R $USER_NAME:$USER_NAME /run/influx
 chmod -R 770 /run/influx
 
 # clean up
