@@ -2,7 +2,7 @@
 set -vex
 cd /tmp
 export INFLUXDB_GIT_URL=https://github.com/influxdata/influxdb.git
-export GO_URL=https://golang.org/dl/go$GOLANG_VERSION.src.tar.gz
+export GO_URL=https://golang.org/dl/go${GOLANG_VERSION}.src.tar.gz
 
 # install build deps
 apk add --update --virtual .build-deps \

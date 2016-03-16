@@ -9,8 +9,8 @@ debug: build
 
 deploy: clean build
 	git checkout -b tmp
-	sed -rei 's/(INFLUXDB_VERSION=)[a-z.0-9]+/\1${VERSION}/' Dockerfile
-	[[ -z $$(git status -s) ]]&&git commit -m "influxdb ${VERSION}" -a 2>/dev/null
+	sed -i -re "s/^(ARG VERSION=)[a-z.0-9]+/\1${VERSION}/" Dockerfile
+	-git commit -m "influxdb ${VERSION}" -a 2>/dev/null
 	git tag ${VERSION}
 	git checkout master
 	git branch -D tmp
