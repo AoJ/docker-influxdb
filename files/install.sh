@@ -1,5 +1,5 @@
 #/usr/bin/env sh
-set -evx
+set -vex
 cd /tmp
 export INFLUXDB_GIT_URL=https://github.com/influxdata/influxdb.git
 export GO_URL=https://golang.org/dl/go$GOLANG_VERSION.src.tar.gz
@@ -26,23 +26,23 @@ export GOROOT=/usr/local/go
 export PATH=$GOPATH/bin:$GOROOT/bin:$PATH
 
 # download influxdb and deps
+go get github.com/sparrc/gdm
 go get github.com/influxdata/influxdb
 cd $GOPATH/src/github.com
 ln -s influxdata influxdb #bug with old influxdb name
 cd influxdata/influxdb
-go get -u -f -t ./...
-go clean ./...
+gdm restore
 
 # build
 git checkout -q --detach "v$INFLUXDB_VERSION"
-# use date from last commit in branch instead of current date
-# TODO Reproducible build
-# date=$(git log -n1 --format="%aI" --date=iso8601-strict)
-date=$(date -Iseconds)
 export LDFLAGS="-X main.version $INFLUXDB_VERSION"
 export LDFLAGS="$LDFLAGS -X main.branch master"
 export LDFLAGS="$LDFLAGS -X main.commit $(git rev-parse --short HEAD)"
+# use date from last commit in branch instead of current date
+# TODO Reproducible build, TODO tmp to 0.11
+date=$(git log -n1 --format="%aI" --date=iso8601-strict)
 export LDFLAGS="$LDFLAGS -X main.buildTime $date"
+
 go install -ldflags="$LDFLAGS" ./...
 
 # copy final bin
@@ -54,6 +54,7 @@ fi
 cp $files /usr/local/bin/
 chown influx:influx $files
 chmod 550 $files
+sha1sum $files
 
 
 # use default config
@@ -72,6 +73,6 @@ chown -R influx:influx /run/influx
 chmod -R 770 /run/influx
 
 # clean up
-apk del .build-deps
+apk del --prune .build-deps
 rm -rf /var/cache/apk/* /tmp/* /var/tmp/* $GOROOT $GOPATH
 
